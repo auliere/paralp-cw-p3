@@ -24,7 +24,27 @@ procedure p03 is
   N: Integer := 8;
   P: Integer := 2;
   H: Integer := 4;
-
+-- t_start - start time; t_copy - copy start time; t_calc - calc start time; t_finish - finish time
+  t_start, t_copy, t_calc, t_finish: Ada.Real_Time.Time;  
+  
+  procedure Write_Time_To_File(
+    Start_Time, End_Time: Ada.Real_Time.Time;
+    File_Name: String; Comment: String := "") is
+    Work_Time: Duration;
+    My_File: Ada.Text_IO.File_type;
+  begin
+    Work_Time := Ada.Real_Time.To_Duration(End_Time - Start_Time);
+    Put("N =   "); Put(N);
+    Put(Duration'Image(Work_Time)); Put("s. "); Put_Line("(" & Comment & ")");
+    
+    Create (File => My_File, Mode => Out_File, 
+      Name => File_Name);
+    Put(File => My_File, 
+      Item => Trim(Duration'Image(Work_Time), 
+                Ada.Strings.Left));
+    Put(File => My_File, Item => ";");
+    Close(My_File);  
+  end;
   
 begin
   --Read N and P from command line
@@ -63,27 +83,6 @@ begin
       MA, MB, MC, MO, ME: Matrix;
       a: Scalar;
       Sum1, Sum2: Scalar;
-        -- -- Calculate MAh
-        -- procedure Calculate
-          -- (MBa, MCha, MOa, MEha: Proto_Matrix; 
-          -- aa: Scalar; 
-          -- MAha: out Proto_Matrix) is
-          -- Sum1, Sum2: Scalar;
-        -- begin
-          -- Put_Line("Enter: Calculate procedure for T1");
-          -- for I in MBa'Range loop
-            -- for J in MCha'Range loop
-              -- Put(I); Put(J); Put_Line("");
-              -- Sum1 := 0.0;
-              -- Sum2 := 0.0;
-              -- for K in MBa'Range loop
-                -- Sum1 := Sum1 + (MBa(I)(K) * MCha(K)(J)); --MB * MCh
-                -- Sum2 := Sum2 + (MOa(I)(K) * MEha(K)(J)); -- MO * MEh
-              -- end loop;
-              -- MAha(I)(J) := Sum1 + Sum2 * aa; -- Sum1 + Sum2 * aa;
-            -- end loop;
-          -- end loop;
-        -- end;
     begin
       Put_Line("Task T1 started");
       --Initialize MA
@@ -93,39 +92,35 @@ begin
       Put_Line("MC =   "); Input(MC); 
       Put_Line("MO =   "); Input(MO); 
       Put_Line("ME =   "); Input(ME);      
-      Put_Line("a =    "); Input(a); Put(a); Put_Line("");      
+      Put_Line("a =    "); Input(a); Put(a); Put_Line("");
+      t_copy := Clock;
       -- Надсилання даних по задачах;
       for I in Range_2P loop
-        Put(I); Put_Line("");
         B := (H*(I-1) + 1);
         E := (H*I);
         if (I = P) then
           E := N;
         end if;    
-        Put(B); Put(E); Put_Line("");
+        TX_Arr(I).Task_Range(B, E);
         TX_Arr(I).Data(MB, MC(B..E), MO, ME(B..E), a);
       end loop;
+      t_calc := Clock;
       -- Обчислення даних;
-      -- Calculate(MB, MC(Range_H), MO, ME(Range_H), a, MA(Range_H));
       ---------
       begin
-        Put_Line("Enter: Calculate procedure for T1");
-        -- for I in MB'Range loop
-          -- for J in MC(Range_H)'Range loop
-            -- Sum1 := 0.0;
-            -- Sum2 := 0.0;
-            -- for K in MB'Range loop
-              -- Sum1 := Sum1 + (MB(I)(K) * MC(Range_H)(K)(J)); --MB * MCh
-              -- Sum2 := Sum2 + (MO(I)(K) * ME(Range_H)(K)(J)); -- MO * MEh
-          -- end loop;
-            -- MA(Range_H)(I)(J) := Sum1 + Sum2 * a; -- Sum1 + Sum2 * aa;
-          -- end loop;
-        -- end loop;
-        Output(MC(Range_H));
-        Put_Line("Exit: Calculate procedure for T1");    
+        for I in 1..N loop
+          for J in Range_H loop
+            Sum1 := 0.0;
+            Sum2 := 0.0;
+            for K in 1..N loop
+              Sum1 := Sum1 + (MB(I)(K) * MC(K)(J)); --MB * MCh
+              Sum2 := Sum2 + (MO(I)(K) * ME(K)(J)); -- MO * MEh
+          end loop;
+            MA(J)(I) := Sum1 + Sum2 * a; -- Sum1 + Sum2 * aa;
+          end loop;
+        end loop;
       end;      
       ---------
-      Put_Line("After calculaiton");
       -- Прийом даних;
       for I in Range_2P loop
         B := (H*(I-1) + 1);
@@ -137,11 +132,21 @@ begin
       end loop;      
       -- Виведення результату;
       Put_Line("MA =   "); Output(MA);
+      t_finish := Clock;
+      Write_Time_To_File(t_start, t_finish, 
+        Trim(Integer'Image(N), Ada.Strings.Left) & "-all",
+        "Total work time");
+      Write_Time_To_File(t_copy, t_finish, 
+        Trim(Integer'Image(N), Ada.Strings.Left) & "-copy_calc",
+        "Copy and calculation time");
+      Write_Time_To_File(t_calc, t_finish, 
+        Trim(Integer'Image(N), Ada.Strings.Left) & "-calc",
+        "Calculation time");
       Put_Line("Task T1 finished");
     end T1;
     
     task body TX is
-      B, E: Integer;
+      B, E: Integer := 0;
     begin
       Put_Line("Task T" & Integer'Image(I) &" started");
       accept Task_Range(First, Last: in Integer) do
@@ -165,62 +170,36 @@ begin
           l_MO := d_MO;
           l_MEh := d_MEh;
           l_a := d_a;
-          Put_Line("Accepted Data");
         end Data;
         -- Обчислення МАн
-        -- Calculate(l_MB, l_MO, l_MCh, l_MEh, l_a, l_MAh);
         ------
         begin
-          Put_Line("Enter: Calculate procedure for T"& Integer'Image(I));
-          -- for I in l_MB'Range loop
-            -- for J in l_MCh'Range loop
-              -- Sum1 := 0.0;
-              -- Sum2 := 0.0;
-              -- for K in l_MB'Range loop
-                -- Sum1 := Sum1 + (l_MB(I)(K) * l_MCh(K)(J)); --MB * MCh
-                -- Sum2 := Sum2 + (l_MO(I)(K) * l_MEh(K)(J)); -- MO * MEh
-              -- end loop;
-              -- l_MAh(I)(J) := Sum1 + Sum2 * l_a; -- Sum1 + Sum2 * aa;
-            -- end loop;
-          -- end loop;  
-          -- Output(l_MCh);      
-          Put_Line("Exit: Calculate procedure for T"& Integer'Image(I));       
+          for I in 1..N loop
+            for J in Range_T loop
+              Sum1 := 0.0;
+              Sum2 := 0.0;
+              for K in 1..N loop
+                Sum1 := Sum1 + (l_MB(I)(K) * l_MCh(J)(K)); --MB * MCh
+                Sum2 := Sum2 + (l_MO(I)(K) * l_MEh(J)(K)); -- MO * MEh
+              end loop;
+              l_MAh(J)(I) := Sum1 + Sum2 * l_a; -- Sum1 + Sum2 * aa;
+            end loop;
+          end loop;  
+          Output(l_MCh);      
         end;
         ------
         -- Передати МАн у Т1
         accept Result(r_MAh: out Proto_Matrix) do
-          Put_Line("Sent Data");
-          Fill(l_MAh);
           r_MAh := l_MAh;
         end Result;
       end; 
       Put_Line("Task T" & Integer'Image(I) &" finished");    
     end TX;
   
-  begin
-    -- Initialize MA
-    -- Fill(MA);
-    -- Enter MB, MC, MO, ME, a
-    -- Put_Line("MB =   "); Input(MB); 
-    -- Put_Line("MC =   "); Input(MC); 
-    -- Put_Line("MO =   "); Input(MO); 
-    -- Put_Line("ME =   "); Input(ME);      
-    -- Put_Line("a =    "); Input(a); Put(a); Put_Line("");    
-    
-    -- for I in Range_2P loop
-      -- B := (H*(I-1) + 1);
-      -- E := (H*I);
-      -- if (I = P) then
-        -- E := N;
-      -- end if;
-      -- Calculate(MB, MC, MO, ME, a, MA);
-    -- end loop;
-    
-    -- Put_Line("MA =   "); Output(MA);
-    
+  begin    
+    t_start := Clock;
     T1_T := new T1;
     for I in Range_2P loop
-      -- Put(I); Put_Line("");
       TX_Arr(I) := new TX(I);
     end loop;
   end;

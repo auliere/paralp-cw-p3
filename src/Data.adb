@@ -96,8 +96,8 @@ package body Data is
   procedure Input(A: out Scalar) is
   begin
     --Get(A);
-    Get_Random(A);
-    --A := 1.0;
+    -- Get_Random(A);
+    A := 1.0;
   end Input;
   
   procedure Output(A: in Vector) is 
