@@ -1,7 +1,7 @@
 ---------------------------------------------------------
 ------------------PARALLEL PROGRAMMING-------------------
--------------------COURSE WORK PART 2--------------------
-----       --ADA. SEMAPHORES. PROTECTED UNITS--     -----
+-------------------COURSE WORK PART 3--------------------
+----               --ADA. RENDEZVOUZ--              -----
 ----              MA = MB*MC + MO*ME*a              -----
 ---------------------------------------------------------
 -------------     BODY OF DATA MODULE     ---------------
@@ -106,8 +106,7 @@ package body Data is
       Vector_Output(A);
     end if;
   end Output;
-  
- 
+   
   procedure Output(A: in Proto_Matrix) is 
   begin
     if Size <= maxOutputSize then
