@@ -34,7 +34,7 @@ begin
   if(Argument_Count > 1) then 
     P := Integer'Value(Argument(2));
   end if;  
-  H := Integer(Float(N)/Float(P) + 0.5);
+  H := Integer(Float'Ceiling(Float(N)/Float(P)));
   
   declare  
     -- Types
@@ -50,6 +50,7 @@ begin
     
     task type TX(I: Integer) is
       pragma Storage_Size(100000000);
+      entry Task_Range(First, Last: in Integer);
       entry Data(d_MB, d_MCh, d_MO, d_MEh: in Proto_Matrix; d_a: in Scalar);
       entry Result(r_MAh: out Proto_Matrix);
     end TX;
@@ -140,48 +141,59 @@ begin
     end T1;
     
     task body TX is
-      l_MB,  l_MO: Matrix;
-      l_MCh, l_MEh: Proto_Matrix(Range_H);
-      l_MAh: Proto_Matrix(Range_H);
-      l_a: Scalar;
-      Sum1, Sum2: Scalar;
+      B, E: Integer;
     begin
       Put_Line("Task T" & Integer'Image(I) &" started");
-      -- Прийом даних з Т1
-      accept Data(d_MB, d_MCh, d_MO, d_MEh: in Proto_Matrix; d_a: in Scalar) do
-        l_MB := d_MB;
-        l_MCh := d_MCh;
-        l_MO := d_MO;
-        l_MEh := d_MEh;
-        l_a := d_a;
-        Put_Line("Accepted Data");
-      end Data;
-      -- Обчислення МАн
-      -- Calculate(l_MB, l_MO, l_MCh, l_MEh, l_a, l_MAh);
-      ------
+      accept Task_Range(First, Last: in Integer) do
+        B := First;
+        E := Last;
+      end Task_Range;
+      declare 
+        -- Types
+        subtype Range_T is Integer range B..E;
+        -- Vars
+        l_MB,  l_MO: Matrix;
+        l_MCh, l_MEh: Proto_Matrix(Range_T);
+        l_MAh: Proto_Matrix(Range_T);
+        l_a: Scalar;
+        Sum1, Sum2: Scalar;
       begin
-        Put_Line("Enter: Calculate procedure for T"& Integer'Image(I));
-        -- for I in l_MB'Range loop
-          -- for J in l_MCh'Range loop
-            -- Sum1 := 0.0;
-            -- Sum2 := 0.0;
-            -- for K in l_MB'Range loop
-              -- Sum1 := Sum1 + (l_MB(I)(K) * l_MCh(K)(J)); --MB * MCh
-              -- Sum2 := Sum2 + (l_MO(I)(K) * l_MEh(K)(J)); -- MO * MEh
+        -- Прийом даних з Т1
+        accept Data(d_MB, d_MCh, d_MO, d_MEh: in Proto_Matrix; d_a: in Scalar) do
+          l_MB := d_MB;
+          l_MCh := d_MCh;
+          l_MO := d_MO;
+          l_MEh := d_MEh;
+          l_a := d_a;
+          Put_Line("Accepted Data");
+        end Data;
+        -- Обчислення МАн
+        -- Calculate(l_MB, l_MO, l_MCh, l_MEh, l_a, l_MAh);
+        ------
+        begin
+          Put_Line("Enter: Calculate procedure for T"& Integer'Image(I));
+          -- for I in l_MB'Range loop
+            -- for J in l_MCh'Range loop
+              -- Sum1 := 0.0;
+              -- Sum2 := 0.0;
+              -- for K in l_MB'Range loop
+                -- Sum1 := Sum1 + (l_MB(I)(K) * l_MCh(K)(J)); --MB * MCh
+                -- Sum2 := Sum2 + (l_MO(I)(K) * l_MEh(K)(J)); -- MO * MEh
+              -- end loop;
+              -- l_MAh(I)(J) := Sum1 + Sum2 * l_a; -- Sum1 + Sum2 * aa;
             -- end loop;
-            -- l_MAh(I)(J) := Sum1 + Sum2 * l_a; -- Sum1 + Sum2 * aa;
-          -- end loop;
-        -- end loop;  
-        -- Output(l_MCh);      
-        Put_Line("Exit: Calculate procedure for T"& Integer'Image(I));       
-      end;
-      ------
-      -- Передати МАн у Т1
-      accept Result(r_MAh: out Proto_Matrix) do
-        Put_Line("Sent Data");
-        Fill(l_MAh);
-        r_MAh := l_MAh;
-      end Result;
+          -- end loop;  
+          -- Output(l_MCh);      
+          Put_Line("Exit: Calculate procedure for T"& Integer'Image(I));       
+        end;
+        ------
+        -- Передати МАн у Т1
+        accept Result(r_MAh: out Proto_Matrix) do
+          Put_Line("Sent Data");
+          Fill(l_MAh);
+          r_MAh := l_MAh;
+        end Result;
+      end; 
       Put_Line("Task T" & Integer'Image(I) &" finished");    
     end TX;
   
